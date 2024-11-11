@@ -1,0 +1,62 @@
+{
+    # Global Caddy configuration
+    admin off
+    
+    # Logging
+    log {
+        level INFO
+        output file /var/log/caddy/access.log
+    }
+}
+
+# Renterd proxy with authentication and SSL
+:443 {
+    # Basic authentication for Renterd
+    basicauth /* {
+        {$RENTERD_USERNAME} {$RENTERD_PASSWORD}
+    }
+
+    # Proxy to Renterd
+    reverse_proxy localhost:9980 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+
+    tls {
+        challenge http
+    }
+}
+
+## renterd s3 proxy with authentication and SSL
+:444 {
+    # Proxy to renterd s3
+    reverse_proxy localhost:9981 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+
+    tls {
+        challenge http
+    }
+}
+
+# Metrics exporter with authentication and SSL
+:8080 {
+    # Basic authentication for metrics
+    basicauth /* {
+        {$METRICS_USERNAME} {$METRICS_PASSWORD}
+    }
+
+    # Proxy to metrics exporter
+    reverse_proxy localhost:9104 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+
+    tls {
+        challenge http
+    }
+}
