@@ -37,8 +37,5 @@ ENV METRICS_TLS_ENABLED=false
 # Expose ports
 EXPOSE 443 444 8080
 
-# Switch back to original user
-USER 1000
-
 # Use entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
