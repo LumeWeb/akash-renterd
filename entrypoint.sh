@@ -1,5 +1,4 @@
 #!/bin/sh
-set -e
 
 # Load environment variables
 export METRICS_USERNAME=${METRICS_USERNAME:-admin}
@@ -13,11 +12,16 @@ if [ -z "$METRICS_PASSWORD" ]; then
     echo "Generated metrics password: $METRICS_PASSWORD"
 fi
 
-# Start metrics exporter in background
+# Start background services once, outside the loop
 /usr/bin/metrics-exporter &
-
-# Start Caddy with authentication and SSL
 caddy run --config /etc/caddy/Caddyfile &
 
-# Start Renterd
-renterd -env -http :9980 -s3.address :9981 -dir ./data
+# Retry loop for just the main process
+while true; do
+    echo "Starting renterd..."
+    renterd -env -http :9980 -s3.address :9981 -dir ./data
+
+    # If we get here, renterd exited
+    echo "Process exited, restarting in 5 seconds..."
+    sleep 5
+done
