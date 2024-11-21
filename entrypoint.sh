@@ -8,8 +8,8 @@ export METRICS_TLS_ENABLED=${METRICS_TLS_ENABLED:-false}
 export DOMAIN_NAME=${DOMAIN_NAME:-renterd.example.com}
 
 if [ -z "$METRICS_PASSWORD" ]; then
-    METRICS_PASSWORD=$(openssl rand -base64 12)
-    echo "Generated metrics password: $METRICS_PASSWORD"
+  echo "Error: METRICS_PASSWORD is not set"
+  exit 1
 fi
 
 # Start background services once, outside the loop
