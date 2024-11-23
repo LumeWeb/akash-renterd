@@ -19,7 +19,7 @@ caddy run --config /etc/caddy/Caddyfile &
 # Retry loop for just the main process
 while true; do
     echo "Starting renterd..."
-    renterd -env -s3.address :9981 -dir ./data
+    renterd -env -http $RENTERD_HTTP_ADDRESS -s3.address :9981 -dir ./data
 
     # If we get here, renterd exited
     echo "Process exited, restarting in 5 seconds..."
