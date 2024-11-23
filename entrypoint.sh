@@ -14,7 +14,6 @@ fi
 
 # Start background services once, outside the loop
 /usr/bin/akash-metrics-exporter &
-caddy run --config /etc/caddy/Caddyfile &
 
 # Retry loop for just the main process
 while true; do
