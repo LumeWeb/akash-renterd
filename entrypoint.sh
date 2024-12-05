@@ -12,6 +12,27 @@ if [ -z "$METRICS_PASSWORD" ]; then
   exit 1
 fi
 
+# Setup database if MySQL URI is provided
+if [ ! -z "$RENTERD_DB_URI" ]; then
+    echo "MySQL mode detected"
+    
+    # Extract host and port from URI
+    DB_HOST=$(echo $RENTERD_DB_URI | cut -d: -f1)
+    DB_PORT=$(echo $RENTERD_DB_URI | cut -d: -f2)
+    
+    # Create databases if they don't exist
+    mysql -h"$DB_HOST" \
+          -P"$DB_PORT" \
+          -u"$RENTERD_DB_USER" \
+          -p"$RENTERD_DB_PASSWORD" \
+          -e "CREATE DATABASE IF NOT EXISTS $RENTERD_DB_NAME; \
+              CREATE DATABASE IF NOT EXISTS $RENTERD_DB_METRICS_NAME;"
+    
+    echo "MySQL databases ready"
+else
+    echo "SQLite mode detected"
+fi
+
 # Start background services once, outside the loop
 /usr/bin/akash-metrics-exporter &
 

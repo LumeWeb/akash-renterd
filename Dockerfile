@@ -10,6 +10,9 @@ USER root
 
 FROM alpine:latest
 
+# Install MySQL client
+RUN apk add --no-cache mysql-client
+
 # Copy the built executables from the builder stages
 COPY --from=metrics-exporter /usr/bin/metrics-exporter /usr/bin/akash-metrics-exporter
 COPY --from=renterd /usr/bin/renterd /usr/bin/renterd
