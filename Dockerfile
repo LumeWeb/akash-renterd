@@ -10,8 +10,8 @@ USER root
 
 FROM alpine:latest
 
-# Install MySQL client
-RUN apk add --no-cache mysql-client
+# Install MySQL client and authentication plugins
+RUN apk add --no-cache mysql-client mariadb-connector-c
 
 # Copy the built executables from the builder stages
 COPY --from=metrics-exporter /usr/bin/metrics-exporter /usr/bin/akash-metrics-exporter
