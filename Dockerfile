@@ -13,6 +13,10 @@ FROM alpine:latest
 # Install MySQL client, authentication plugins, and Caddy
 RUN apk add --no-cache mysql-client mariadb-connector-c caddy
 
+# Create MySQL config directory and add configuration
+RUN mkdir -p /etc/my.cnf.d
+COPY client.cnf /etc/my.cnf.d/client.cnf
+
 # Copy the built executables from the builder stages
 COPY --from=metrics-exporter /usr/bin/metrics-exporter /usr/bin/akash-metrics-exporter
 COPY --from=renterd /usr/bin/renterd /usr/bin/renterd
