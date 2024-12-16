@@ -25,7 +25,7 @@ if [ ! -z "$RENTERD_DB_URI" ]; then
     
     echo "Waiting for MySQL to be ready..."
     # Try to connect to MySQL with retries
-    retry_command mysql -h"$DB_HOST" \
+    retry_command mariadb -h"$DB_HOST" \
         -P"$DB_PORT" \
         -u"$RENTERD_DB_USER" \
         -p"$RENTERD_DB_PASSWORD" \
@@ -34,13 +34,13 @@ if [ ! -z "$RENTERD_DB_URI" ]; then
     if [ $? -eq 0 ]; then
         echo "Creating databases if they don't exist..."
         # Create databases with retry
-        retry_command mysql -h"$DB_HOST" \
+        retry_command mariadb -h"$DB_HOST" \
             -P"$DB_PORT" \
             -u"$RENTERD_DB_USER" \
             -p"$RENTERD_DB_PASSWORD" \
             -e "CREATE DATABASE IF NOT EXISTS $RENTERD_DB_NAME;"
 
-        retry_command mysql -h"$DB_HOST" \
+        retry_command mariadb -h"$DB_HOST" \
             -P"$DB_PORT" \
             -u"$RENTERD_DB_USER" \
             -p"$RENTERD_DB_PASSWORD" \
