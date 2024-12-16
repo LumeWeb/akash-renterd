@@ -1,31 +1,42 @@
-ARG RENTERD_VERSION=1.0.8
-ARG METRICS_EXPORTER_VERSION=develop
+# Build stage for renterd
+FROM golang:1.23 AS builder
 
-# Use the official Renterd image as base
-FROM ghcr.io/lumeweb/akash-metrics-exporter:${METRICS_EXPORTER_VERSION} AS metrics-exporter
-FROM ghcr.io/siafoundation/renterd:${RENTERD_VERSION} AS renterd
+# Install git
+RUN apt-get update && apt-get install -y git
 
-# Switch to root to perform installations
-USER root
+# Set working directory
+WORKDIR /build
 
+# Clone the repository
+RUN git clone https://github.com/LumeWeb/renterd .
+RUN git checkout lumeweb
+
+# Generate build metadata
+RUN go generate ./...
+
+# Build renterd using the workflow build command
+RUN CGO_ENABLED=1 go build -trimpath -a -ldflags '-s -w -linkmode external -extldflags "-static"' ./cmd/renterd
+
+# Metrics exporter stage
+FROM ghcr.io/lumeweb/akash-metrics-exporter:develop AS metrics-exporter
+
+# Final stage
 FROM alpine:latest
 
-# Install MySQL client, authentication plugins, and Caddy
+# Install required packages
 RUN apk add --no-cache mysql-client mariadb-connector-c caddy
 
-# Create MySQL config directory and add configuration
+# Create MySQL config directory
 RUN mkdir -p /etc/my.cnf.d
 COPY client.cnf /etc/my.cnf.d/client.cnf
 
-# Copy the built executables from the builder stages
+# Copy binaries and certificates
+COPY --from=builder /build/renterd /usr/bin/renterd
 COPY --from=metrics-exporter /usr/bin/metrics-exporter /usr/bin/akash-metrics-exporter
-COPY --from=renterd /usr/bin/renterd /usr/bin/renterd
-COPY --from=renterd /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-VOLUME [ "/data" ]
-
-# Create log directory for Caddy
-RUN mkdir -p /var/log/caddy
+# Create required directories
+RUN mkdir -p /var/log/caddy /data
 
 # Copy configuration files
 COPY Caddyfile /etc/caddy/Caddyfile
@@ -33,14 +44,23 @@ COPY retry.sh /retry.sh
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh /retry.sh
 
-# Set environment variables with defaults
+# Set environment variables
+ENV PUID=0
+ENV PGID=0
+ENV RENTERD_API_PASSWORD=
+ENV RENTERD_SEED=
+ENV RENTERD_CONFIG_FILE=/data/renterd.yml
+ENV RENTERD_NETWORK='mainnet'
 ENV METRICS_PORT=9104
 ENV METRICS_USERNAME=admin
 ENV METRICS_PASSWORD=
 ENV METRICS_TLS_ENABLED=false
 
-# Expose ports
-EXPOSE 443 444 8080
+# Setup volumes
+VOLUME [ "/data" ]
 
-# Use entrypoint
+# Expose ports
+EXPOSE 443 444 8080 9980
+
+# Set entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
