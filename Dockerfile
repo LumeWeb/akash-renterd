@@ -25,8 +25,9 @@ RUN mkdir -p /var/log/caddy
 
 # Copy configuration files
 COPY Caddyfile /etc/caddy/Caddyfile
+COPY retry.sh /retry.sh
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh /retry.sh
 
 # Set environment variables with defaults
 ENV METRICS_PORT=9104
