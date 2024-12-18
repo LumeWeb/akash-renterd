@@ -62,7 +62,11 @@ fi
 # Retry loop for just the main process
 while true; do
     echo "Starting renterd..."
-    renterd -env -http $RENTERD_HTTP_ADDRESS -s3.address $RENTERD_S3_ADDRESS -dir ./data
+    if [ -z "$RENTERD_BUS_REMOTE_ADDR" ]; then
+        renterd -env -http $RENTERD_HTTP_ADDRESS -dir ./data
+    else
+        renterd -env -http $RENTERD_HTTP_ADDRESS
+    fi
 
     # If we get here, renterd exited
     echo "Process exited, restarting in 5 seconds..."
