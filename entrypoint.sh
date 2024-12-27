@@ -1,12 +1,5 @@
 #!/bin/sh
 
-# Load environment variables
-export METRICS_USERNAME=${METRICS_USERNAME:-admin}
-export METRICS_PASSWORD=${METRICS_PASSWORD}
-export METRICS_PORT=${METRICS_PORT:-9104}
-export METRICS_TLS_ENABLED=${METRICS_TLS_ENABLED:-false}
-export DOMAIN_NAME=${DOMAIN_NAME:-renterd.example.com}
-
 if [ -z "$METRICS_PASSWORD" ]; then
   echo "Error: METRICS_PASSWORD is not set"
   exit 1

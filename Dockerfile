@@ -44,18 +44,6 @@ COPY retry.sh /retry.sh
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh /retry.sh
 
-# Set environment variables
-ENV PUID=0
-ENV PGID=0
-ENV RENTERD_API_PASSWORD=
-ENV RENTERD_SEED=
-ENV RENTERD_CONFIG_FILE=/data/renterd.yml
-ENV RENTERD_NETWORK='mainnet'
-ENV METRICS_PORT=9104
-ENV METRICS_USERNAME=admin
-ENV METRICS_PASSWORD=
-ENV METRICS_TLS_ENABLED=false
-
 # Setup volumes
 VOLUME [ "/data" ]
 
