@@ -47,8 +47,23 @@ register_node() {
     fi
     local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/renterd/$node_id"
     
-    # Create lease and capture hex ID
-    LEASE_ID=$(etcdctl ${etcd_args} lease grant 60 | grep -oE 'ID: [0-9a-fA-F]+' | cut -d' ' -f2)
+    # Set node URL based on type
+    local node_url
+    if [ "$node_type" = "worker" ]; then
+        node_url="$RENTERD_WORKER_EXTERNAL_ADDR"
+    elif [ "$node_type" = "bus" ]; then
+        node_url="http://$AKASH_INGRESS_HOST"
+    elif [ "$node_type" = "autopilot" ]; then
+        node_url="http://$AKASH_INGRESS_HOST"
+    else
+        echo "Invalid node type: $node_type"
+        exit 1
+    fi
+    
+    # Create lease with retry
+    local lease_output
+    lease_output=$(retry_command etcdctl ${etcd_args} lease grant 60)
+    LEASE_ID=$(echo "$lease_output" | grep -oE 'ID: [0-9a-fA-F]+' | cut -d' ' -f2)
     if [ -z "$LEASE_ID" ]; then
         echo "Failed to obtain valid lease ID"
         exit 1
@@ -76,9 +91,22 @@ update_heartbeat() {
     local node_id=$(echo "$AKASH_INGRESS_HOST" | cut -d. -f1)
     local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/renterd/$node_id"
     
+    # Set node URL based on type
+    local node_url
+    if [ "$node_type" = "worker" ]; then
+        node_url="$RENTERD_WORKER_EXTERNAL_ADDR"
+    elif [ "$node_type" = "bus" ]; then
+        node_url="http://$AKASH_INGRESS_HOST"
+    elif [ "$node_type" = "autopilot" ]; then
+        node_url="http://$AKASH_INGRESS_HOST"
+    else
+        echo "Invalid node type: $node_type"
+        exit 1
+    fi
+    
     while true; do
-        # Keep lease alive
-        etcdctl ${etcd_args} lease keep-alive $lease_id >/dev/null 2>&1 &
+        # Keep lease alive with retry
+        retry_command etcdctl ${etcd_args} lease keep-alive $lease_id >/dev/null 2>&1 &
         
         # Update timestamp
         local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -88,7 +116,8 @@ update_heartbeat() {
             --arg ts "$timestamp" \
             '{url: $url, type: $type, last_seen: $ts, priority: 0, is_healthy: true}')
         
-        echo "$json" | etcdctl ${etcd_args} put "$key" -
+        # Put with retry
+        echo "$json" | retry_command etcdctl ${etcd_args} put "$key" -
         sleep 30
     done
 }
@@ -96,11 +125,11 @@ update_heartbeat() {
 # Cleanup function
 cleanup() {
     local etcd_args=$1
-    local node_url="$RENTERD_HTTP_ADDRESS"
-    local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/discovery/renterd/$node_url"
+    local node_id=$(echo "$AKASH_INGRESS_HOST" | cut -d. -f1)
+    local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/renterd/$node_id"
     
-    # Remove node from ETCD
-    etcdctl ${etcd_args} del "$key"
+    # Remove node from ETCD with retry
+    retry_command etcdctl ${etcd_args} del "$key"
     
     # Kill all background processes
     kill $(jobs -p) 2>/dev/null
