@@ -30,7 +30,7 @@ init_etcd() {
     
     # Keep retrying until health check succeeds
     local health_output
-    health_output=$(retry_command etcdctl ${etcd_args} endpoint health -w json)
+    health_output=$(etcdctl ${etcd_args} endpoint health -w json)
     if ! echo "$health_output" | jq -e '.[-1].health' >/dev/null 2>&1; then
         echo >&2 "Failed to verify etcd health: $health_output"
         return 1
@@ -134,7 +134,14 @@ cleanup() {
 setup_cluster() {
     if [ "$RENTERD_CLUSTER_ENABLED" = "true" ]; then
         NODE_TYPE=$(get_node_type)
+        
+        # Initialize etcd connection
         ETCD_ARGS=$(init_etcd)
+        if [ -z "$ETCD_ARGS" ]; then
+            echo "Failed to initialize etcd connection after multiple retries"
+            exit 1
+        fi
+
         LEASE_ID=$(register_node "$NODE_TYPE" "$ETCD_ARGS")
         
         # Start heartbeat daemon

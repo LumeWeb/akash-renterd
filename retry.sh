@@ -9,7 +9,7 @@ retry_command() {
 
     while [ $attempt -le $max_attempts ]
     do
-        "$@"
+        eval "$*"
         exitCode=$?
 
         if [ $exitCode = 0 ]
