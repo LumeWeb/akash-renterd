@@ -135,14 +135,18 @@ setup_cluster() {
     if [ "$RENTERD_CLUSTER_ENABLED" = "true" ]; then
         NODE_TYPE=$(get_node_type)
         
-        # Initialize etcd connection
-        ETCD_ARGS=$(init_etcd)
+        # Initialize etcd connection with retries
+        ETCD_ARGS=$(retry_command init_etcd)
         if [ -z "$ETCD_ARGS" ]; then
             echo "Failed to initialize etcd connection after multiple retries"
             exit 1
         fi
 
-        LEASE_ID=$(register_node "$NODE_TYPE" "$ETCD_ARGS")
+        LEASE_ID=$(retry_command register_node "$NODE_TYPE" "$ETCD_ARGS")
+        if [ -z "$LEASE_ID" ]; then
+            echo "Failed to register node after multiple retries"
+            exit 1
+        fi
         
         # Start heartbeat daemon
         /heartbeat.sh "$NODE_TYPE" "$ETCD_ARGS" "$LEASE_ID" </dev/null >/dev/null 2>&1 &
