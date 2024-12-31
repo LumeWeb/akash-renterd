@@ -28,8 +28,13 @@ init_etcd() {
         etcd_args="$etcd_args --user=$ETCD_USERNAME:$ETCD_PASSWORD"
     fi
     
-    # Keep retrying until health check succeeds, but discard output
-    retry_command etcdctl ${etcd_args} endpoint health >/dev/null
+    # Keep retrying until health check succeeds
+    local health_output
+    health_output=$(retry_command etcdctl ${etcd_args} endpoint health -w json)
+    if ! echo "$health_output" | jq -e '.[0].health' >/dev/null; then
+        echo "Failed to verify etcd health: $health_output"
+        return 1
+    fi
     
     # Return clean etcd args
     echo "$etcd_args"
@@ -79,12 +84,22 @@ register_node() {
         exit 1
     fi
     
-    # Create lease with retry
+    # Create lease with retry and get JSON output
     local lease_output
-    lease_output=$(retry_command etcdctl ${etcd_args} lease grant 60)
-    LEASE_ID=$(echo "$lease_output" | grep -oE 'ID: [0-9a-fA-F]+' | cut -d' ' -f2)
+    lease_output=$(retry_command etcdctl ${etcd_args} lease --hex grant 60 -w json)
+    
+    # Extract decimal lease ID and convert to hex
+    local lease_id_dec
+    lease_id_dec=$(echo "$lease_output" | jq -r .ID)
+    if [ -z "$lease_id_dec" ] || [ "$lease_id_dec" = "null" ]; then
+        echo "Failed to obtain valid lease ID from output: $lease_output"
+        exit 1
+    fi
+    
+    # Convert decimal to hex
+    LEASE_ID=$(printf "%x\n" "$lease_id_dec")
     if [ -z "$LEASE_ID" ]; then
-        echo "Failed to obtain valid lease ID"
+        echo "Failed to convert lease ID to hex: $lease_id_dec"
         exit 1
     fi
     
@@ -118,7 +133,7 @@ update_heartbeat() {
     fi
     
     while true; do
-        # Keep lease alive with retry
+        # Keep lease alive with retry (using hex lease ID)
         retry_command etcdctl ${etcd_args} lease keep-alive $lease_id >/dev/null 2>&1 &
         
         # Update timestamp
