@@ -44,7 +44,8 @@ COPY retry.sh /retry.sh
 COPY entrypoint.sh /entrypoint.sh
 COPY database.sh /database.sh
 COPY cluster.sh /cluster.sh
-RUN chmod +x /entrypoint.sh /retry.sh
+COPY heartbeat.sh /heartbeat.sh
+RUN chmod +x /entrypoint.sh /retry.sh /heartbeat.sh
 
 # Setup volumes
 VOLUME [ "/data" ]

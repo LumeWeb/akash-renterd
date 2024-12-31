@@ -86,7 +86,7 @@ register_node() {
     
     # Create lease with retry and get JSON output
     local lease_output
-    lease_output=$(retry_command etcdctl lease --hex grant 60 -w json ${etcd_args})
+    lease_output=$(retry_command etcdctl ${etcd_args} lease --hex grant 60 -w json)
     
     # Extract decimal lease ID and convert to hex
     local lease_id_dec
@@ -117,38 +117,6 @@ register_node() {
     echo "$LEASE_ID"
 }
 
-# Update node heartbeat
-update_heartbeat() {
-    local node_type=$1
-    local etcd_args=$2
-    local lease_id=$3
-    local node_id=$(echo "$AKASH_INGRESS_HOST" | cut -d. -f1)
-    local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/renterd/$node_id"
-    
-    # Get node URL
-    local node_url
-    node_url=$(get_node_url "$node_type")
-    if [ $? -ne 0 ]; then
-        exit 1
-    fi
-    
-    while true; do
-        # Keep lease alive with retry (using hex lease ID)
-        retry_command etcdctl ${etcd_args} lease keep-alive $lease_id >/dev/null 2>&1 &
-        
-        # Update timestamp
-        local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-        local json=$(jq -n \
-            --arg url "$node_url" \
-            --arg type "$node_type" \
-            --arg ts "$timestamp" \
-            '{url: $url, type: $type, last_seen: $ts, priority: 0, is_healthy: true}')
-        
-        # Put with retry
-        echo "$json" | retry_command etcdctl ${etcd_args} put "$key" -
-        sleep 30
-    done
-}
 
 # Cleanup function
 cleanup() {
@@ -169,8 +137,8 @@ setup_cluster() {
         ETCD_ARGS=$(init_etcd)
         LEASE_ID=$(register_node "$NODE_TYPE" "$ETCD_ARGS")
         
-        # Start heartbeat in background
-        update_heartbeat "$NODE_TYPE" "$ETCD_ARGS" "$LEASE_ID" &
+        # Start heartbeat daemon
+        /heartbeat.sh "$NODE_TYPE" "$ETCD_ARGS" "$LEASE_ID" </dev/null >/dev/null 2>&1 &
         
         # Return ETCD_ARGS for cleanup
         echo "$ETCD_ARGS"
