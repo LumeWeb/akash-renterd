@@ -42,7 +42,15 @@ get_node_url() {
         "worker")
             echo "$RENTERD_WORKER_EXTERNAL_ADDR"
             ;;
-        "bus"|"autopilot")
+        "bus")
+            # Extract port from RENTERD_HTTP_ADDRESS (strip colon)
+            local port=$(echo "$RENTERD_HTTP_ADDRESS" | sed 's/^://')
+            # Try custom host first, fall back to default
+            local host_var="AKASH_INGRESS_CUSTOM_HOST_${port}_0"
+            local host=${!host_var:-$AKASH_INGRESS_HOST}
+            echo "http://$host"
+            ;;
+        "autopilot")
             echo "http://$AKASH_INGRESS_HOST"
             ;;
         *)
