@@ -27,11 +27,19 @@ validate_env() {
 main() {
     validate_env
     
-    # Setup database
-    setup_database
-    
     # Start metrics exporter
     akash-metrics-exporter &
+    
+    # Setup database if we're a bus node
+    if [ "$RENTERD_CLUSTER_ENABLED" = "true" ]; then
+        NODE_TYPE=$(get_node_type)
+        if [ "$NODE_TYPE" = "bus" ]; then
+            setup_database
+        fi
+    else
+        # When clustering is disabled, we're always a bus node
+        setup_database
+    fi
     
     # Setup cluster if enabled
     ETCD_ARGS=""
