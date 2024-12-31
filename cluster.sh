@@ -49,10 +49,13 @@ get_node_url() {
             ;;
         "bus")
             # Extract port from RENTERD_HTTP_ADDRESS (strip colon)
-            local port=$(echo "$RENTERD_HTTP_ADDRESS" | sed 's/^://')
+            local port
+            port=$(echo "$RENTERD_HTTP_ADDRESS" | sed 's/^://')
             # Try custom host first, fall back to default
             local host_var="AKASH_INGRESS_CUSTOM_HOST_${port}_0"
-            local host=${!host_var:-$AKASH_INGRESS_HOST}
+            # Use eval to handle the indirect variable reference
+            local host
+            eval "host=\${$host_var:-\$AKASH_INGRESS_HOST}"
             echo "http://$host"
             ;;
         "autopilot")
