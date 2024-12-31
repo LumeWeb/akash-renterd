@@ -5,15 +5,19 @@
 
 # Determine node type based on environment variables
 get_node_type() {
-    if [ "$RENTERD_AUTOPILOT_ENABLED" != "true" ] && [ "$RENTERD_WORKER_ENABLED" != "true" ]; then
-        echo "bus"
-    elif [ -n "$RENTERD_BUS_REMOTE_ADDR" ] && [ "$RENTERD_AUTOPILOT_ENABLED" != "true" ]; then
-        echo "worker"
-    elif [ "$RENTERD_WORKER_ENABLED" != "true" ] && [ -n "$RENTERD_BUS_REMOTE_ADDR" ]; then
-        echo "autopilot"
+    if [ -n "$RENTERD_BUS_REMOTE_ADDR" ]; then
+        if [ "$RENTERD_AUTOPILOT_ENABLED" = "true" ]; then
+            echo "autopilot"
+        else
+            echo "worker"
+        fi
     else
-        echo "Error: Unable to determine node type from environment variables"
-        exit 1
+        if [ "$RENTERD_AUTOPILOT_ENABLED" != "true" ] && [ "$RENTERD_WORKER_ENABLED" != "true" ]; then
+            echo "bus"
+        else
+            echo "Error: Unable to determine node type from environment variables"
+            exit 1
+        fi
     fi
 }
 
