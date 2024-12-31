@@ -24,7 +24,7 @@ FROM ghcr.io/lumeweb/akash-metrics-exporter:develop AS metrics-exporter
 FROM alpine:latest
 
 # Install required packages
-RUN apk add --no-cache mysql-client mariadb-connector-c caddy
+RUN apk add --no-cache mysql-client mariadb-connector-c caddy etcd-ctl jq
 
 # Create MySQL config directory
 RUN mkdir -p /etc/my.cnf.d
