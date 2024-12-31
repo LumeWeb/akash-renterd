@@ -31,8 +31,8 @@ init_etcd() {
     # Keep retrying until health check succeeds
     local health_output
     health_output=$(retry_command etcdctl ${etcd_args} endpoint health -w json)
-    if ! echo "$health_output" | jq -e '.[0].health' >/dev/null; then
-        echo "Failed to verify etcd health: $health_output"
+    if ! echo "$health_output" | jq -e '.[-1].health' >/dev/null 2>&1; then
+        echo >&2 "Failed to verify etcd health: $health_output"
         return 1
     fi
     
@@ -86,7 +86,7 @@ register_node() {
     
     # Create lease with retry and get JSON output
     local lease_output
-    lease_output=$(retry_command etcdctl ${etcd_args} lease --hex grant 60 -w json)
+    lease_output=$(retry_command etcdctl lease --hex grant 60 -w json ${etcd_args})
     
     # Extract decimal lease ID and convert to hex
     local lease_id_dec
