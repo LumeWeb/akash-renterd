@@ -19,7 +19,7 @@ run_heartbeat() {
     fi
 
     # Start lease keep-alive in background
-    etcdctl ${etcd_args} lease keep-alive $lease_id >/dev/null 2>&1 &
+    etcdctl lease keep-alive $lease_id >/dev/null 2>&1 &
     local keep_alive_pid=$!
 
     # Trap to clean up background process
@@ -34,7 +34,7 @@ run_heartbeat() {
             --arg ts "$timestamp" \
             '{url: $url, type: $type, last_seen: $ts, priority: 0, is_healthy: true}')
 
-        echo "$json" | retry_command etcdctl ${etcd_args} put "$key" -
+        echo "$json" | retry_command etcdctl put --lease=$lease_id "$key" -
         sleep 30
     done
 }

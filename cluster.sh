@@ -23,14 +23,15 @@ get_node_type() {
 
 # Initialize ETCD connection and verify it works
 init_etcd() {
-    local etcd_args="--endpoints=$ETCD_ENDPOINTS"
+    export ETCDCTL_API=3
+    export ETCDCTL_ENDPOINTS="$ETCD_ENDPOINTS"
     if [ -n "$ETCD_USERNAME" ] && [ -n "$ETCD_PASSWORD" ]; then
-        etcd_args="$etcd_args --user=$ETCD_USERNAME:$ETCD_PASSWORD"
+        export ETCDCTL_USER="$ETCD_USERNAME:$ETCD_PASSWORD"
     fi
     
     # Keep retrying until health check succeeds
     local health_output
-    health_output=$(etcdctl ${etcd_args} endpoint health -w json)
+    health_output=$(etcdctl endpoint health -w json)
     if ! echo "$health_output" | jq -e '.[-1].health' >/dev/null 2>&1; then
         echo >&2 "Failed to verify etcd health: $health_output"
         return 1
@@ -89,7 +90,7 @@ register_node() {
     
     # Create lease with retry and get JSON output
     local lease_output
-    lease_output=$(retry_command etcdctl ${etcd_args} lease --hex grant 60 -w json)
+    lease_output=$(retry_command etcdctl lease --hex grant 60 -w json)
     
     # Extract decimal lease ID and convert to hex
     local lease_id_dec
@@ -115,7 +116,7 @@ register_node() {
         '{url: $url, type: $type, last_seen: $ts, priority: 0, is_healthy: true}')
     
     # Put key with lease
-    echo "$json" | etcdctl ${etcd_args} --lease=$LEASE_ID put "$key" -
+    echo "$json" | etcdctl put --lease=$LEASE_ID "$key" -
     
     echo "$LEASE_ID"
 }
@@ -128,7 +129,7 @@ cleanup() {
     local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/renterd/$node_id"
     
     # Remove node from ETCD with retry
-    retry_command etcdctl ${etcd_args} del "$key"
+    retry_command etcdctl del "$key"
     
     # Kill all background processes
     kill $(jobs -p) 2>/dev/null
