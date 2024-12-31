@@ -2,7 +2,7 @@
 
 # Retry function with exponential backoff
 retry_command() {
-    local max_attempts=5
+    local max_attempts=100
     local timeout=1
     local attempt=1
     local exitCode=0
