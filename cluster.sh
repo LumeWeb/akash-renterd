@@ -24,10 +24,9 @@ init_etcd() {
         etcd_args="$etcd_args --user=$ETCD_USERNAME:$ETCD_PASSWORD"
     fi
     
-    if ! retry_command etcdctl ${etcd_args} endpoint health >/dev/null; then
-        echo "Failed to connect to ETCD"
-        exit 1
-    fi
+    # Keep retrying until health check succeeds
+    retry_command etcdctl ${etcd_args} endpoint health
+    
     echo "$etcd_args"
 }
 
