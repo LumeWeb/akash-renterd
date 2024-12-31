@@ -35,6 +35,23 @@ init_etcd() {
     echo "$etcd_args"
 }
 
+# Get the URL for a node based on its type
+get_node_url() {
+    local node_type=$1
+    case "$node_type" in
+        "worker")
+            echo "$RENTERD_WORKER_EXTERNAL_ADDR"
+            ;;
+        "bus"|"autopilot")
+            echo "http://$AKASH_INGRESS_HOST"
+            ;;
+        *)
+            echo "Invalid node type: $node_type" >&2
+            return 1
+            ;;
+    esac
+}
+
 # Register node in ETCD with lease
 register_node() {
     local node_type=$1
@@ -47,16 +64,10 @@ register_node() {
     fi
     local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/renterd/$node_id"
     
-    # Set node URL based on type
+    # Get node URL
     local node_url
-    if [ "$node_type" = "worker" ]; then
-        node_url="$RENTERD_WORKER_EXTERNAL_ADDR"
-    elif [ "$node_type" = "bus" ]; then
-        node_url="http://$AKASH_INGRESS_HOST"
-    elif [ "$node_type" = "autopilot" ]; then
-        node_url="http://$AKASH_INGRESS_HOST"
-    else
-        echo "Invalid node type: $node_type"
+    node_url=$(get_node_url "$node_type")
+    if [ $? -ne 0 ]; then
         exit 1
     fi
     
@@ -91,16 +102,10 @@ update_heartbeat() {
     local node_id=$(echo "$AKASH_INGRESS_HOST" | cut -d. -f1)
     local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/renterd/$node_id"
     
-    # Set node URL based on type
+    # Get node URL
     local node_url
-    if [ "$node_type" = "worker" ]; then
-        node_url="$RENTERD_WORKER_EXTERNAL_ADDR"
-    elif [ "$node_type" = "bus" ]; then
-        node_url="http://$AKASH_INGRESS_HOST"
-    elif [ "$node_type" = "autopilot" ]; then
-        node_url="http://$AKASH_INGRESS_HOST"
-    else
-        echo "Invalid node type: $node_type"
+    node_url=$(get_node_url "$node_type")
+    if [ $? -ne 0 ]; then
         exit 1
     fi
     
