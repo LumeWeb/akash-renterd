@@ -24,11 +24,11 @@ init_etcd() {
         etcd_args="$etcd_args --user=$ETCD_USERNAME:$ETCD_PASSWORD"
     fi
     
-    if ! retry_command etcdctl $etcd_args endpoint health; then
+    if ! retry_command etcdctl ${etcd_args} endpoint health >/dev/null; then
         echo "Failed to connect to ETCD"
         exit 1
     fi
-    echo $etcd_args
+    echo "$etcd_args"
 }
 
 # Register node in ETCD with lease
@@ -39,7 +39,7 @@ register_node() {
     local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/discovery/renterd/$node_url"
     
     # Create lease
-    LEASE_ID=$(etcdctl $etcd_args lease grant 60 | grep -o 'ID: [0-9]*' | cut -d' ' -f2)
+    LEASE_ID=$(etcdctl ${etcd_args} lease grant 60 | grep -o 'ID: [0-9]*' | cut -d' ' -f2)
     
     # Create JSON payload
     local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -50,7 +50,7 @@ register_node() {
         '{url: $url, type: $type, last_seen: $ts, priority: 0, is_healthy: true}')
     
     # Put key with lease
-    echo "$json" | etcdctl $etcd_args --lease=$LEASE_ID put "$key" -
+    echo "$json" | etcdctl ${etcd_args} --lease=$LEASE_ID put "$key" -
     
     echo "$LEASE_ID"
 }
@@ -65,7 +65,7 @@ update_heartbeat() {
     
     while true; do
         # Keep lease alive
-        etcdctl $etcd_args lease keep-alive $lease_id >/dev/null 2>&1 &
+        etcdctl ${etcd_args} lease keep-alive $lease_id >/dev/null 2>&1 &
         
         # Update timestamp
         local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -75,7 +75,7 @@ update_heartbeat() {
             --arg ts "$timestamp" \
             '{url: $url, type: $type, last_seen: $ts, priority: 0, is_healthy: true}')
         
-        echo "$json" | etcdctl $etcd_args put "$key" -
+        echo "$json" | etcdctl ${etcd_args} put "$key" -
         sleep 30
     done
 }
@@ -87,7 +87,7 @@ cleanup() {
     local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/discovery/renterd/$node_url"
     
     # Remove node from ETCD
-    etcdctl $etcd_args del "$key"
+    etcdctl ${etcd_args} del "$key"
     
     # Kill all background processes
     kill $(jobs -p) 2>/dev/null
