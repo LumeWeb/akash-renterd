@@ -24,9 +24,10 @@ init_etcd() {
         etcd_args="$etcd_args --user=$ETCD_USERNAME:$ETCD_PASSWORD"
     fi
     
-    # Keep retrying until health check succeeds
-    retry_command etcdctl ${etcd_args} endpoint health
+    # Keep retrying until health check succeeds, but discard output
+    retry_command etcdctl ${etcd_args} endpoint health >/dev/null
     
+    # Return clean etcd args
     echo "$etcd_args"
 }
 
