@@ -5,8 +5,8 @@
 
 # Validate required environment variables
 validate_env() {
-    if [ -z "$METRICS_PASSWORD" ]; then
-        echo "Error: METRICS_PASSWORD is not set"
+    if [ -n "$METRICS_SERVICE_NAME" ] && [ -z "$METRICS_PASSWORD" ]; then
+        echo "Error: METRICS_PASSWORD is required when METRICS_SERVICE_NAME is set"
         exit 1
     fi
 
