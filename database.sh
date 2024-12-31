@@ -19,14 +19,14 @@ setup_database() {
         
         echo "Waiting for MySQL to be ready..."
         # Try to connect to MySQL with retries
-        retry_command mariadb -e "SELECT 1;"
+        retry_command "mariadb -e 'SELECT 1 FROM DUAL;'"
         
         if [ $? -eq 0 ]; then
             echo "Creating databases if they don't exist..."
             # Create databases with retry
-            retry_command mariadb -e "CREATE DATABASE IF NOT EXISTS $RENTERD_DB_NAME;"
+            retry_command "mariadb -e 'CREATE DATABASE IF NOT EXISTS $RENTERD_DB_NAME;'"
 
-            retry_command mariadb -e "CREATE DATABASE IF NOT EXISTS $RENTERD_DB_METRICS_NAME;"
+            retry_command "mariadb -e 'CREATE DATABASE IF NOT EXISTS $RENTERD_DB_METRICS_NAME;'"
             
             echo "MySQL databases ready"
         else
