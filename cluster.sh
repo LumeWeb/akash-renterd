@@ -35,11 +35,20 @@ init_etcd() {
 register_node() {
     local node_type=$1
     local etcd_args=$2
-    local node_url="$RENTERD_HTTP_ADDRESS"
-    local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/discovery/renterd/$node_url"
+    # Extract the unique ID from AKASH_INGRESS_HOST (part before first dot)
+    local node_id=$(echo "$AKASH_INGRESS_HOST" | cut -d. -f1)
+    if [ -z "$node_id" ]; then
+        echo "Failed to extract node ID from AKASH_INGRESS_HOST"
+        exit 1
+    fi
+    local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/renterd/$node_id"
     
-    # Create lease
-    LEASE_ID=$(etcdctl ${etcd_args} lease grant 60 | grep -o 'ID: [0-9]*' | cut -d' ' -f2)
+    # Create lease and capture hex ID
+    LEASE_ID=$(etcdctl ${etcd_args} lease grant 60 | grep -oE 'ID: [0-9a-fA-F]+' | cut -d' ' -f2)
+    if [ -z "$LEASE_ID" ]; then
+        echo "Failed to obtain valid lease ID"
+        exit 1
+    fi
     
     # Create JSON payload
     local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -60,8 +69,8 @@ update_heartbeat() {
     local node_type=$1
     local etcd_args=$2
     local lease_id=$3
-    local node_url="$RENTERD_HTTP_ADDRESS"
-    local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/discovery/renterd/$node_url"
+    local node_id=$(echo "$AKASH_INGRESS_HOST" | cut -d. -f1)
+    local key="$RENTERD_CLUSTER_ETCD_DISCOVERY_PREFIX/renterd/$node_id"
     
     while true; do
         # Keep lease alive
