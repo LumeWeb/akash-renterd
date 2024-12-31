@@ -42,6 +42,8 @@ RUN mkdir -p /var/log/caddy /data
 COPY Caddyfile /etc/caddy/Caddyfile
 COPY retry.sh /retry.sh
 COPY entrypoint.sh /entrypoint.sh
+COPY database.sh /database.sh
+COPY cluster.sh /cluster.sh
 RUN chmod +x /entrypoint.sh /retry.sh
 
 # Setup volumes
