@@ -1,7 +1,7 @@
 [client]
 ssl=true
 ssl-verify-server-cert=false 
-user=RENTERD_DB_USER
-password=RENTERD_DB_PASSWORD
-host=RENTERD_DB_HOST
-port=RENTERD_DB_PORT
+user="RENTERD_DB_USER"
+password="RENTERD_DB_PASSWORD"
+host="RENTERD_DB_HOST"
+port="RENTERD_DB_PORT"
