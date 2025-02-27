@@ -1,5 +1,11 @@
 #!/bin/sh
 
+if -f /akash-cfg/etcd.env; then
+  set -a
+  source /akash-cfg/config.env
+  set +a
+fi
+
 # Source required modules
 . /retry.sh
 . /database.sh
