@@ -22,11 +22,11 @@ setup_database() {
         local escaped_password
         escaped_password=$(escape_db_password "$RENTERD_DB_PASSWORD")
         
-        # Update client.cnf with actual values
-        sed -i "s/RENTERD_DB_USER/$RENTERD_DB_USER/g" /etc/my.cnf.d/client.cnf
-        sed -i "s/RENTERD_DB_PASSWORD/$escaped_password/g" /etc/my.cnf.d/client.cnf
-        sed -i "s/RENTERD_DB_HOST/$DB_HOST/g" /etc/my.cnf.d/client.cnf
-        sed -i "s/RENTERD_DB_PORT/$DB_PORT/g" /etc/my.cnf.d/client.cnf
+        # Update client.cnf safely with actual values
+        sed -i "s|^user=.*|user=$RENTERD_DB_USER|" /etc/my.cnf.d/client.cnf
+        sed -i "s|^password=.*|password=$escaped_password|" /etc/my.cnf.d/client.cnf
+        sed -i "s|^host=.*|host=$DB_HOST|" /etc/my.cnf.d/client.cnf
+        sed -i "s|^port=.*|port=$DB_PORT|" /etc/my.cnf.d/client.cnf
         
         echo "Waiting for MySQL to be ready..."
         # Try to connect to MySQL with retries
