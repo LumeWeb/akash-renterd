@@ -6,8 +6,8 @@
 # Escape special characters in database passwords
 escape_db_password() {
     local pwd="$1"
-    # Escape special characters for MySQL config
-    echo "$pwd" | sed 's/[\\&@]/\\&/g'
+    # Escape backslashes first, then quotes for MySQL config file
+    echo "$pwd" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed 's/\x27/\\\x27/g'
 }
 
 setup_database() {
@@ -23,10 +23,10 @@ setup_database() {
         escaped_password=$(escape_db_password "$RENTERD_DB_PASSWORD")
         
         # Update client.cnf safely with actual values
-        sed -i "s|^user=.*|user=$RENTERD_DB_USER|" /etc/my.cnf.d/client.cnf
-        sed -i "s|^password=.*|password=$escaped_password|" /etc/my.cnf.d/client.cnf
-        sed -i "s|^host=.*|host=$DB_HOST|" /etc/my.cnf.d/client.cnf
-        sed -i "s|^port=.*|port=$DB_PORT|" /etc/my.cnf.d/client.cnf
+        sed -i "s|^user=.*|user=\"$RENTERD_DB_USER\"|" /etc/my.cnf.d/client.cnf
+        sed -i "s|^password=.*|password=\"$escaped_password\"|" /etc/my.cnf.d/client.cnf
+        sed -i "s|^host=.*|host=\"$DB_HOST\"|" /etc/my.cnf.d/client.cnf
+        sed -i "s|^port=.*|port=\"$DB_PORT\"|" /etc/my.cnf.d/client.cnf
         
         echo "Waiting for MySQL to be ready..."
         # Try to connect to MySQL with retries
