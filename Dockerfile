@@ -1,5 +1,5 @@
 # Build stage for renterd
-FROM golang:1.23 AS builder
+FROM golang:1.24 AS builder
 
 # Install git
 RUN apt-get update && apt-get install -y git
